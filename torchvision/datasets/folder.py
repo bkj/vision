@@ -7,7 +7,7 @@ import os.path
 IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm']
 
 
-def is_image_file(filename):
+def is_image_file(filename, force):
     """Checks if a file is an image.
 
     Args:
@@ -16,6 +16,9 @@ def is_image_file(filename):
     Returns:
         bool: True if the filename ends with a known image extension
     """
+    if force:
+        return True
+    
     filename_lower = filename.lower()
     return any(filename_lower.endswith(ext) for ext in IMG_EXTENSIONS)
 
@@ -27,17 +30,17 @@ def find_classes(dir):
     return classes, class_to_idx
 
 
-def make_dataset(dir, class_to_idx):
+def make_dataset(dir, class_to_idx, force=False):
     images = []
     dir = os.path.expanduser(dir)
     for target in sorted(os.listdir(dir)):
         d = os.path.join(dir, target)
         if not os.path.isdir(d):
             continue
-
+        
         for root, _, fnames in sorted(os.walk(d)):
             for fname in sorted(fnames):
-                if is_image_file(fname):
+                if is_image_file(fname, force=force):
                     path = os.path.join(root, fname)
                     item = (path, class_to_idx[target])
                     images.append(item)
@@ -94,10 +97,9 @@ class ImageFolder(data.Dataset):
         imgs (list): List of (image path, class_index) tuples
     """
 
-    def __init__(self, root, transform=None, target_transform=None,
-                 loader=default_loader):
+    def __init__(self, root, transform=None, target_transform=None, loader=default_loader, force=False):
         classes, class_to_idx = find_classes(root)
-        imgs = make_dataset(root, class_to_idx)
+        imgs = make_dataset(root, class_to_idx, force=force)
         if len(imgs) == 0:
             raise(RuntimeError("Found 0 images in subfolders of: " + root + "\n"
                                "Supported image extensions are: " + ",".join(IMG_EXTENSIONS)))
